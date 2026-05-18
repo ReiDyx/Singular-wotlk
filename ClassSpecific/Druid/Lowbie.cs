@@ -37,6 +37,7 @@ namespace Singular.ClassSpecific.Druid
                 Safers.EnsureTarget(),
                 Movement.CreateMoveToLosBehavior(),
                 Movement.CreateFaceTargetBehavior(),
+                Spell.WaitForCast(true),
                 // Make sure we're in cat form first, period.
                 Spell.BuffSelf("Cat Form"),
                 Helpers.Common.CreateInterruptSpellCast(ret => StyxWoW.Me.CurrentTarget),
