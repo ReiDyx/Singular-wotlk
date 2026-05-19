@@ -32,6 +32,11 @@ namespace Singular.ClassSpecific.Warrior
                 // Auto Attack
                 Helpers.Common.CreateAutoAttack(false),
                 Helpers.Common.CreateInterruptSpellCast(ret => StyxWoW.Me.CurrentTarget),
+                // Chase the mob if it kites — mirrors Rogue Lowbie pattern
+                new Decorator(
+                    ret => StyxWoW.Me.CurrentTarget != null &&
+                           StyxWoW.Me.CurrentTarget.Distance > Spell.MeleeRange,
+                    Movement.CreateMoveToMeleeBehavior(false)),
                 // Offensive racials / buffs (follow Singular patterns)
                 Spell.BuffSelf("Blood Fury", ret => SpellManager.HasSpell("Blood Fury")),
                 Spell.BuffSelf("Berserking", ret => SpellManager.HasSpell("Berserking")),
@@ -52,8 +57,8 @@ namespace Singular.ClassSpecific.Warrior
                 // DPS
                 Spell.Cast("Heroic Strike"),
                 Spell.Cast("Thunder Clap", ret => RagePercent > 50),
-                //move to melee
-                Movement.CreateMoveToTargetBehavior(true, 5f)
+                // Fallback move to melee
+                Movement.CreateMoveToMeleeBehavior(true)
                 );
         }
 
