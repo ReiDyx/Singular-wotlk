@@ -262,7 +262,7 @@ namespace Singular.ClassSpecific.Druid
         {
             return new PrioritySelector(
                 Spell.BuffSelf("Cat Form"),
-                Spell.BuffSelf("Prowl"),
+                Spell.BuffSelf("Prowl", ret => SpellManager.HasSpell("Pounce")),
                 Spell.Cast("Feral Charge - Cat"),				
 				Spell.Cast("Pounce"),
 				Spell.Buff("Rake", true, ret => StyxWoW.Me.CurrentTarget),
