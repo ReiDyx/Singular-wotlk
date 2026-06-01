@@ -16,13 +16,15 @@ namespace Singular.ClassSpecific.Warlock
 {
     public class Common
     {
+        // All WotLK healthstone item entry IDs (Minor/Lesser/Healthstone/Greater/Major/Fel/Demonic ranks)
+        private static readonly uint[] HealthstoneEntries = { 5512, 5511, 5509, 5510, 9421, 22103, 36892, 36893, 36894, 36895 };
         private static bool NeedToCreateHealthStone
         {
             get
             {
-                // WotLK QC: Healthstones are ranked (Minor/Lesser/Healthstone/Greater/Major/Fel/Demonic Healthstone)
-                // All use-spell names contain "Healthstone", so use Contains instead of exact match
-                return !StyxWoW.Me.CarriedItems.Any(i => i.ItemSpells.Any(s => s.ActualSpell != null && s.ActualSpell.Name.Contains("Healthstone")));
+                // ActualSpell is null for item-use spells not in the player's spellbook;
+                // check by item entry ID instead.
+                return !StyxWoW.Me.CarriedItems.Any(i => HealthstoneEntries.Contains(i.Entry));
             }
         }
 

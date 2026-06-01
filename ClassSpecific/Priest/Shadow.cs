@@ -134,6 +134,9 @@ namespace Singular.ClassSpecific.Priest
                 // Priority 9: Mind Flay (filler, refreshes SWP via Pain and Suffering)
                 Spell.Cast("Mind Flay", ret => StyxWoW.Me.ManaPercent >= SingularSettings.Instance.Priest.MindFlayMana),
                 
+                // Smite filler for low-level Shadow priests (< 11 Shadow talent points, no Mind Flay)
+                Spell.Cast("Smite", ret => !SpellManager.HasSpell("Mind Flay")),
+                
                 // Fallback to wand if OOM
                 Helpers.Common.CreateUseWand(ret => SingularSettings.Instance.Priest.UseWand),
                 Movement.CreateMoveToTargetBehavior(true, 32f)

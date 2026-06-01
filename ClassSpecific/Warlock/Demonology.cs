@@ -24,7 +24,10 @@ namespace Singular.ClassSpecific.Warlock
         {
             return new PrioritySelector(
                 Spell.WaitForCast(false),
-                Pet.CreateSummonPet("Felguard")
+                Pet.CreateSummonPet("Felguard"),
+                new Decorator(
+                    ret => !SpellManager.HasSpell("Summon Felguard"),
+                    Pet.CreateSummonPet("Imp"))
                 );
         }
 

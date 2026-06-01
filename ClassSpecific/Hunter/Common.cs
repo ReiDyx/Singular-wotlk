@@ -165,6 +165,7 @@ namespace Singular.ClassSpecific.Hunter
                         }),
                         Helpers.Common.CreateWaitForLagDuration(),
                         new WaitContinue(2, ret => StyxWoW.Me.GotAlivePet || StyxWoW.Me.Combat, new ActionAlwaysSucceed()),
+                        new Action(ret => { if (!StyxWoW.Me.GotAlivePet) PetManager.PetTimer.Reset(); return RunStatus.Success; }),
                         new Decorator(
                             ret => !StyxWoW.Me.GotAlivePet && (!StyxWoW.Me.Combat || reviveInCombat),
                             Spell.BuffSelf("Revive Pet")))
