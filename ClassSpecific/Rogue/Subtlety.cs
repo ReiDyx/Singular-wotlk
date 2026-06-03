@@ -31,9 +31,9 @@ namespace Singular.ClassSpecific.Rogue
                 // Garrote if we can, SS is kinda meh as an opener.
                 Spell.Cast("Premeditation"),
                 Spell.Cast("Shadowstep"),
-                Spell.Cast("Garrote", ret => StyxWoW.Me.CurrentTarget.MeIsBehind),
+                Spell.Cast("Garrote", ret => StyxWoW.Me.CurrentTarget.Distance < Spell.MeleeRange && StyxWoW.Me.CurrentTarget.MeIsBehind),
                 Spell.Cast("Ambush", ret => !SpellManager.HasSpell("Garrote") && StyxWoW.Me.CurrentTarget.MeIsBehind),
-                Spell.Cast("Cheap Shot", ret => !StyxWoW.Me.CurrentTarget.MeIsBehind),
+                Spell.Cast("Cheap Shot", ret => StyxWoW.Me.CurrentTarget.Distance < Spell.MeleeRange && !StyxWoW.Me.CurrentTarget.MeIsBehind),
                 Spell.Cast("Hemorrhage", ret => !SpellManager.HasSpell("Cheap Shot") && !StyxWoW.Me.CurrentTarget.MeIsBehind),
                 Spell.Cast("Sinister Strike", ret => !SpellManager.HasSpell("Hemorrhage")),
 
@@ -98,8 +98,8 @@ namespace Singular.ClassSpecific.Rogue
 
                 Spell.BuffSelf("Shadow Dance", ret => Unit.NearbyUnfriendlyUnits.Count(u => u.IsTargetingMeOrPet) >= 3),
                 Spell.Cast("Cheap Shot", ret => StyxWoW.Me.HasAura("Shadow Dance")),
-                Spell.BuffSelf("Slice and Dice",
-                    ret => StyxWoW.Me.RawComboPoints > 0 && (!StyxWoW.Me.HasAura("Slice and Dice") || StyxWoW.Me.GetAuraTimeLeft("Slice and Dice", true).TotalSeconds < 3)),
+                Spell.Cast("Slice and Dice", ret => StyxWoW.Me,
+                    ret => StyxWoW.Me.ComboPoints > 0 && StyxWoW.Me.GetAuraTimeLeft("Slice and Dice", true).TotalSeconds < 3),
                 Spell.Buff("Rupture", true, ret => StyxWoW.Me.ComboPoints >= 4 && StyxWoW.Me.CurrentTarget != null && StyxWoW.Me.CurrentTarget.Elite),
                 Spell.Cast("Eviscerate", ret => StyxWoW.Me.CurrentTarget.HealthPercent < 40 && StyxWoW.Me.ComboPoints >= 2),
                 Spell.Cast("Eviscerate", ret => StyxWoW.Me.ComboPoints == 5),
@@ -177,8 +177,8 @@ namespace Singular.ClassSpecific.Rogue
                     ret => SpellManager.HasSpell("Vanish") && SpellManager.Spells["Vanish"].CooldownTimeLeft.TotalSeconds > 10 &&
                            SpellManager.Spells["Shadowstep"].CooldownTimeLeft.TotalSeconds > 10),
                 Spell.BuffSelf("Shadow Dance", ret => StyxWoW.Me.CurrentTarget.MeIsBehind),
-                Spell.BuffSelf("Slice and Dice",
-                    ret => StyxWoW.Me.RawComboPoints > 0 && (!StyxWoW.Me.HasAura("Slice and Dice") || StyxWoW.Me.GetAuraTimeLeft("Slice and Dice", true).TotalSeconds < 3)),
+                Spell.Cast("Slice and Dice", ret => StyxWoW.Me,
+                    ret => StyxWoW.Me.ComboPoints > 0 && StyxWoW.Me.GetAuraTimeLeft("Slice and Dice", true).TotalSeconds < 3),
                 Spell.Buff("Rupture", true, ret => StyxWoW.Me.ComboPoints >= 4),
                 Spell.Cast("Eviscerate", ret => StyxWoW.Me.ComboPoints == 5),
                 // Vanish + Shadowstep + Premeditation + Ambush combo
@@ -275,8 +275,8 @@ namespace Singular.ClassSpecific.Rogue
                     ret => SpellManager.HasSpell("Vanish") && SpellManager.Spells["Vanish"].CooldownTimeLeft.TotalSeconds > 10 &&
                            SpellManager.Spells["Shadowstep"].CooldownTimeLeft.TotalSeconds > 10),
                 Spell.BuffSelf("Shadow Dance", ret => StyxWoW.Me.CurrentTarget.MeIsBehind),
-                Spell.BuffSelf("Slice and Dice",
-                    ret => StyxWoW.Me.RawComboPoints > 0 && (!StyxWoW.Me.HasAura("Slice and Dice") || StyxWoW.Me.GetAuraTimeLeft("Slice and Dice", true).TotalSeconds < 3)),
+                Spell.Cast("Slice and Dice", ret => StyxWoW.Me,
+                    ret => StyxWoW.Me.ComboPoints > 0 && StyxWoW.Me.GetAuraTimeLeft("Slice and Dice", true).TotalSeconds < 3),
                 Spell.Buff("Rupture", true, ret => StyxWoW.Me.ComboPoints >= 4),
                 Spell.Cast("Eviscerate", ret => StyxWoW.Me.ComboPoints == 5),
                 // Vanish + Shadowstep + Premeditation + Ambush combo

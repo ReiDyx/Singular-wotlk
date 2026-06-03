@@ -30,7 +30,7 @@ namespace Singular.ClassSpecific.Rogue
                 Spell.BuffSelf("Sprint", ret => SingularSettings.Instance.Rogue.UseStealthOnPull && StyxWoW.Me.IsMoving && StyxWoW.Me.HasAura("Stealth")),
                 Spell.BuffSelf("Stealth", ret => SingularSettings.Instance.Rogue.UseStealthOnPull),
                 // Garrote if we can, SS is kinda meh as an opener.
-                Spell.Cast("Garrote", ret => StyxWoW.Me.CurrentTarget.MeIsBehind),
+                Spell.Cast("Garrote", ret => StyxWoW.Me.CurrentTarget.Distance < Spell.MeleeRange && StyxWoW.Me.CurrentTarget.MeIsBehind),
                 Spell.Cast("Cheap Shot", ret => StyxWoW.Me.CurrentTarget.Distance < Spell.MeleeRange && (!SpellManager.HasSpell("Garrote") || !StyxWoW.Me.CurrentTarget.MeIsBehind)),
                 Spell.Cast("Ambush", ret => !SpellManager.HasSpell("Cheap Shot") && StyxWoW.Me.CurrentTarget.MeIsBehind),
                 Spell.Cast("Sinister Strike", ret => !SpellManager.HasSpell("Cheap Shot") && !StyxWoW.Me.CurrentTarget.MeIsBehind),
@@ -105,8 +105,8 @@ namespace Singular.ClassSpecific.Rogue
                 Spell.Buff("Rupture", true,
                     ret => SingularSettings.Instance.Rogue.CombatUseRuptureFinisher && StyxWoW.Me.ComboPoints >= 4 &&
                            StyxWoW.Me.CurrentTarget != null && StyxWoW.Me.CurrentTarget.Elite && !StyxWoW.Me.HasAura("Blade Flurry") && StyxWoW.Me.CurrentTarget.HasBleedDebuff()),
-                Spell.BuffSelf("Slice and Dice",
-                    ret => StyxWoW.Me.RawComboPoints > 0 && (!StyxWoW.Me.HasAura("Slice and Dice") || StyxWoW.Me.GetAuraTimeLeft("Slice and Dice", true).TotalSeconds < 3)),
+                Spell.Cast("Slice and Dice", ret => StyxWoW.Me,
+                    ret => StyxWoW.Me.ComboPoints > 0 && StyxWoW.Me.GetAuraTimeLeft("Slice and Dice", true).TotalSeconds < 3),
                 Spell.Cast("Eviscerate",
                     ret => StyxWoW.Me.CurrentTarget.HealthPercent < 40 && StyxWoW.Me.ComboPoints >= 2),
                 Spell.Cast("Eviscerate",
@@ -189,8 +189,8 @@ namespace Singular.ClassSpecific.Rogue
                 Spell.Buff("Rupture", true,
                     ret => SingularSettings.Instance.Rogue.CombatUseRuptureFinisher && StyxWoW.Me.ComboPoints >= 4 &&
                            StyxWoW.Me.CurrentTarget != null && !StyxWoW.Me.HasAura("Blade Flurry") && StyxWoW.Me.CurrentTarget.HasBleedDebuff()),
-                Spell.BuffSelf("Slice and Dice",
-                    ret => StyxWoW.Me.RawComboPoints > 0 && (!StyxWoW.Me.HasAura("Slice and Dice") || StyxWoW.Me.GetAuraTimeLeft("Slice and Dice", true).TotalSeconds < 3)),
+                Spell.Cast("Slice and Dice", ret => StyxWoW.Me,
+                    ret => StyxWoW.Me.ComboPoints > 0 && StyxWoW.Me.GetAuraTimeLeft("Slice and Dice", true).TotalSeconds < 3),
                 Spell.Cast("Eviscerate",
                     ret => StyxWoW.Me.CurrentTarget.HealthPercent <= 30 && StyxWoW.Me.ComboPoints >= 3),
                 Spell.Cast("Kidney Shot",
@@ -287,8 +287,8 @@ namespace Singular.ClassSpecific.Rogue
                 Spell.Buff("Rupture", true,
                     ret => SingularSettings.Instance.Rogue.CombatUseRuptureFinisher && StyxWoW.Me.ComboPoints >= 4 && 
                            StyxWoW.Me.CurrentTarget != null && !StyxWoW.Me.HasAura("Blade Flurry") && StyxWoW.Me.CurrentTarget.HasBleedDebuff()),
-                Spell.BuffSelf("Slice and Dice",
-                    ret => StyxWoW.Me.RawComboPoints > 0 && (!StyxWoW.Me.HasAura("Slice and Dice") || StyxWoW.Me.GetAuraTimeLeft("Slice and Dice", true).TotalSeconds < 3)),
+                Spell.Cast("Slice and Dice", ret => StyxWoW.Me,
+                    ret => StyxWoW.Me.ComboPoints > 0 && StyxWoW.Me.GetAuraTimeLeft("Slice and Dice", true).TotalSeconds < 3),
                 Spell.Cast("Eviscerate",
                     ret => StyxWoW.Me.ComboPoints == 5),
                 Spell.Cast("Sinister Strike"),
