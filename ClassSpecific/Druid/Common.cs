@@ -62,8 +62,15 @@ namespace Singular.ClassSpecific.Druid
                                                     unit.Distance <= 30f &&
                                                     !unit.Dead && !unit.IsGhost && unit.IsInMyPartyOrRaid &&
                                                     !unit.HasAnyAura("Mark of the Wild",
-                                                                     "Blessing of Kings"))))
-                );
+                                                                     "Blessing of Kings")))
+                ),
+                // Cast Thorns, added by xyFaded
+                Spell.Cast(
+                    "Thorns",
+                    ret => StyxWoW.Me,
+                    ret => !StyxWoW.Me.HasAnyAura("Thorns")
+                )
+            );
         }
 
         #endregion
