@@ -97,10 +97,17 @@ namespace Singular.ClassSpecific.Paladin
 
         private static Composite CreatePaladinBlessBehavior()
         {
+            // WotLK QC: wrap each Blessing cast in a Throttle(2s) so we don't re-attempt the cast
+            // every pulse while the buff is missing/being-applied. Without this, the priority
+            // selector re-evaluates and re-issues CastSpell multiple times per second (e.g. when
+            // moving, drinking, or the buff hasn't propagated yet), draining mana and spamming
+            // "Casting Blessing of Might on Myself" in the log. Matches Singular 5.4.8's
+            // spanBuffFrequency (20s) throttling behavior, scaled down to 2s since the WotLK
+            // routine has no group-wide IsItTimeToBuff() guard.
             return
                 new PrioritySelector(
                     // WotLK: Blessing of Wisdom — separate from Might in WotLK (merged in Cata 4.0.1)
-                    Spell.Cast("Blessing of Wisdom",
+                    new Throttle(2, Spell.Cast("Blessing of Wisdom",
                         ret => StyxWoW.Me,
                         ret =>
                         {
@@ -118,8 +125,8 @@ namespace Singular.ClassSpecific.Paladin
                             return players.Any(
                                         p => p.DistanceSqr < 40 * 40 && p.IsAlive &&
                                              !p.HasAura("Blessing of Wisdom"));
-                        }),
-                    Spell.Cast("Blessing of Kings",
+                        })),
+                    new Throttle(2, Spell.Cast("Blessing of Kings",
                         ret => StyxWoW.Me,
                         ret =>
                         {
@@ -141,8 +148,8 @@ namespace Singular.ClassSpecific.Paladin
                                              !p.HasAura("Mark of the Wild")
                                              // WotLK QC: Removed "Embrace of the Shale Spider" (Cata-only Shale Spider exotic pet buff)
                                              );
-                        }),
-                    Spell.Cast("Blessing of Might",
+                        })),
+                    new Throttle(2, Spell.Cast("Blessing of Might",
                         ret => StyxWoW.Me,
                         ret =>
                         {
@@ -164,7 +171,7 @@ namespace Singular.ClassSpecific.Paladin
                                              ((p.HasAura("Blessing of Kings") && !p.HasMyAura("Blessing of Kings")) ||
                                                p.HasAura("Mark of the Wild"))));
                                                // WotLK QC: Removed "Embrace of the Shale Spider" (Cata-only)
-                        })
+                        }))
                     );
         }
     }
