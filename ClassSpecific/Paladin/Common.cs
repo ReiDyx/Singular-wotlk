@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http.Headers;
 using Singular.Dynamics;
 using Singular.Helpers;
 using Singular.Managers;
@@ -109,12 +108,7 @@ namespace Singular.ClassSpecific.Paladin
                                     Spell.BuffSelf("Seal of Corruption"),
                                     Spell.BuffSelf("Seal of Righteousness", ret => !SpellManager.HasSpell("Seal of Vengeance") && !SpellManager.HasSpell("Seal of Corruption"))
                                 )
-                            )
-                            /* Spell.BuffSelf("Seal of Vengeance", ret => !SpellManager.HasSpell("Seal of Corruption")),
-                            Spell.BuffSelf("Seal of Corruption"),
-                            Spell.BuffSelf("Seal of Righteousness", ret => !SpellManager.HasSpell("Seal of Vengeance") && !SpellManager.HasSpell("Seal of Corruption"))
-                            ))*/,
-                            
+                            ),
                     new Decorator(
                         ret => SingularSettings.Instance.Paladin.Aura != PaladinAura.Auto,
                         new PrioritySelector(
