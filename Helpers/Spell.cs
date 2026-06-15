@@ -69,6 +69,28 @@ namespace Singular.Helpers
             return WaitForCast(false, true);
         }
 
+        // Ported from Singular 5.4.8 (Helpers/Spell.cs:512). The 5.4.8 source reads
+        // Spell.FixGlobalCooldown (a WoWSpell property from HB 6.2.3 Navigator that
+        // 3.3.5a CopilotBuddy does not expose). SpellManager.GlobalCooldown is the
+        // same value read via the WoW client cooldown list — equivalent semantics for
+        // "is the GCD currently active".
+        public static bool IsGlobalCooldown()
+        {
+            return SpellManager.GlobalCooldown;
+        }
+
+        // Ported from Singular 5.4.8 (Helpers/Spell.cs:622). Wraps WaitForCast +
+        // WaitForChannel so the priority selector doesn't tick the damage-spell
+        // sub-tree while a cast or channel is still in flight — the primary fix
+        // for the Heroic Throw spam that the 4.3.4 port inherited.
+        public static Composite WaitForCastOrChannel()
+        {
+            return new PrioritySelector(
+                WaitForCast(),
+                new Decorator(ret => StyxWoW.Me.ChanneledCastingSpellId > 0,
+                    new ActionAlwaysSucceed()));
+        }
+
         /// <summary>
         ///   Creates a composite that will return a success, so long as you are currently casting. (Use this to prevent the CC from
         ///   going down to lower branches in the tree, while casting.)
