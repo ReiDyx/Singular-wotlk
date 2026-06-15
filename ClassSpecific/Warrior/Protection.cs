@@ -34,44 +34,50 @@ namespace Singular.ClassSpecific.Warrior
                 Movement.CreateMoveToLosBehavior(), // Auto Attack
                 Helpers.Common.CreateAutoAttack(false), //Dismount
                 new Decorator(ret => StyxWoW.Me.Mounted, Helpers.Common.CreateDismount("Pulling")),
-                //Shoot flying targets
+                // Ported from Singular 5.4.8/6.X.X/Legion CreateProtectionNormalPull.
+                // Same spam fix as PvpPull — see PvpPull comment for the full rationale.
+                Spell.WaitForCastOrChannel(),
                 new Decorator(
-                    ret => StyxWoW.Me.CurrentTarget.IsFlying,
+                    ret => !Spell.IsGlobalCooldown(),
                     new PrioritySelector(
-                        Spell.WaitForCast(), Spell.Cast("Heroic Throw"),
-                        Spell.Cast(
-                            "Throw",
-                            ret => StyxWoW.Me.CurrentTarget.IsFlying && Item.RangedIsType(WoWItemWeaponClass.Thrown)),
-                        Spell.Cast(
-                            "Shoot",
+                        //Shoot flying targets
+                        new Decorator(
+                            ret => StyxWoW.Me.CurrentTarget.IsFlying,
+                            new PrioritySelector(
+                                Spell.Cast("Heroic Throw"),
+                                Spell.Cast(
+                                    "Throw",
+                                    ret => StyxWoW.Me.CurrentTarget.IsFlying && Item.RangedIsType(WoWItemWeaponClass.Thrown)),
+                                Spell.Cast(
+                                    "Shoot",
+                                    ret =>
+                                    StyxWoW.Me.CurrentTarget.IsFlying &&
+                                    (Item.RangedIsType(WoWItemWeaponClass.Bow) || Item.RangedIsType(WoWItemWeaponClass.Gun))),
+                                Movement.CreateMoveToTargetBehavior(true, 27f))), //Buff up
+                        Spell.BuffSelf(
+                            "Commanding Shout",
+                            ret => RagePercent < 20 && SingularSettings.Instance.Warrior.UseWarriorShouts == false),
+                        Spell.BuffSelf(
+                            "Battle Shout",
                             ret =>
-                            StyxWoW.Me.CurrentTarget.IsFlying &&
-                            (Item.RangedIsType(WoWItemWeaponClass.Bow) || Item.RangedIsType(WoWItemWeaponClass.Gun))),
-                        Movement.CreateMoveToTargetBehavior(true, 27f))), //Buff up
-                Spell.BuffSelf(
-                    "Commanding Shout",
-                    ret => RagePercent < 20 && SingularSettings.Instance.Warrior.UseWarriorShouts == false),
-                Spell.BuffSelf(
-                    "Battle Shout",
-                    ret =>
-                    SingularSettings.Instance.Warrior.UseWarriorShouts &&
-                    !StyxWoW.Me.HasAnyAura(
-                        "Horn of Winter", "Strength of Earth Totem", "Battle Shout")), //Charge
-                Spell.Cast(
-                    "Charge",
-                    ret =>
-                    SpellManager.HasSpell("Charge") &&
-                    StyxWoW.Me.CurrentTarget.Distance.Between(
-                        SpellManager.Spells["Charge"].ActualMinRange(StyxWoW.Me.CurrentTarget),
-                        TalentManager.HasGlyph("Charge") /* WotLK QC: "Glyph of Charge" in WotLK, was "Glyph of Long Charge" in Cata */
-                            ? SpellManager.Spells["Charge"].ActualMaxRange(StyxWoW.Me.CurrentTarget) + 5
-                            : SpellManager.Spells["Charge"].ActualMaxRange(StyxWoW.Me.CurrentTarget))),
-                Spell.Cast(
-                    "Heroic Throw",
-                    ret =>
-                    !Unit.HasAura(StyxWoW.Me.CurrentTarget, "Charge Stun") &&
-                    SingularSettings.Instance.Warrior.UseWarriorBasicRotation == false), // Move to Melee
-                Movement.CreateMoveToMeleeBehavior(true));
+                            SingularSettings.Instance.Warrior.UseWarriorShouts &&
+                            !StyxWoW.Me.HasAnyAura(
+                                "Horn of Winter", "Strength of Earth Totem", "Battle Shout")), //Charge
+                        Spell.Cast(
+                            "Charge",
+                            ret =>
+                            SpellManager.HasSpell("Charge") &&
+                            StyxWoW.Me.CurrentTarget.Distance.Between(
+                                SpellManager.Spells["Charge"].ActualMinRange(StyxWoW.Me.CurrentTarget),
+                                TalentManager.HasGlyph("Charge") /* WotLK QC: "Glyph of Charge" in WotLK, was "Glyph of Long Charge" in Cata */
+                                    ? SpellManager.Spells["Charge"].ActualMaxRange(StyxWoW.Me.CurrentTarget) + 5
+                                    : SpellManager.Spells["Charge"].ActualMaxRange(StyxWoW.Me.CurrentTarget))),
+                        Spell.Cast(
+                            "Heroic Throw",
+                            ret =>
+                            !Unit.HasAura(StyxWoW.Me.CurrentTarget, "Charge Stun") &&
+                            SingularSettings.Instance.Warrior.UseWarriorBasicRotation == false), // Move to Melee
+                        Movement.CreateMoveToMeleeBehavior(true))));
         }
 
         [Spec(TalentSpec.ProtectionWarrior)]
@@ -272,44 +278,59 @@ namespace Singular.ClassSpecific.Warrior
                 Movement.CreateMoveToLosBehavior(), // Auto Attack
                 Helpers.Common.CreateAutoAttack(false), //Dismount
                 new Decorator(ret => StyxWoW.Me.Mounted, Helpers.Common.CreateDismount("Pulling")),
-                //Shoot flying targets
+                // Ported from Singular 5.4.8/6.X.X/Legion CreateProtectionNormalPull
+                // (Singular 5.4.8 Helpers/Spell.cs:622). The 4.3.4 ref (Singular434) had
+                // no WaitForCastOrChannel and no !IsGlobalCooldown gate, which is why the
+                // previous port was spamming Heroic Throw every pulse (ticked ~70ms apart,
+                // 40+ log lines in 2.4s with the spell on its 1.5s CD). The 5.4.8+ pattern
+                // holds the whole damage-spell sub-tree until the current cast/channel
+                // finishes AND until the GCD is ready, so each Spell.Cast() is only
+                // attempted when it can actually land. Mage-block / Polymorph is
+                // already handled by the Berserker Rage mechanic-check in
+                // CreateProtectionNormalCombatBuffs (line 124-129) — see Legion ref
+                // ClassSpecific/Warrior/Protection.cs.
+                Spell.WaitForCastOrChannel(),
                 new Decorator(
-                    ret => StyxWoW.Me.CurrentTarget.IsFlying,
+                    ret => !Spell.IsGlobalCooldown(),
                     new PrioritySelector(
-                        Spell.WaitForCast(), Spell.Cast("Heroic Throw"),
-                        Spell.Cast(
-                            "Throw",
-                            ret => StyxWoW.Me.CurrentTarget.IsFlying && Item.RangedIsType(WoWItemWeaponClass.Thrown)),
-                        Spell.Cast(
-                            "Shoot",
+                        //Shoot flying targets
+                        new Decorator(
+                            ret => StyxWoW.Me.CurrentTarget.IsFlying,
+                            new PrioritySelector(
+                                Spell.Cast("Heroic Throw"),
+                                Spell.Cast(
+                                    "Throw",
+                                    ret => StyxWoW.Me.CurrentTarget.IsFlying && Item.RangedIsType(WoWItemWeaponClass.Thrown)),
+                                Spell.Cast(
+                                    "Shoot",
+                                    ret =>
+                                    StyxWoW.Me.CurrentTarget.IsFlying &&
+                                    (Item.RangedIsType(WoWItemWeaponClass.Bow) || Item.RangedIsType(WoWItemWeaponClass.Gun))),
+                                Movement.CreateMoveToTargetBehavior(true, 27f))), //Buff up
+                        Spell.BuffSelf(
+                            "Commanding Shout",
+                            ret => RagePercent < 20 && SingularSettings.Instance.Warrior.UseWarriorShouts == false),
+                        Spell.BuffSelf(
+                            "Battle Shout",
                             ret =>
-                            StyxWoW.Me.CurrentTarget.IsFlying &&
-                            (Item.RangedIsType(WoWItemWeaponClass.Bow) || Item.RangedIsType(WoWItemWeaponClass.Gun))),
-                        Movement.CreateMoveToTargetBehavior(true, 27f))), //Buff up
-                Spell.BuffSelf(
-                    "Commanding Shout",
-                    ret => RagePercent < 20 && SingularSettings.Instance.Warrior.UseWarriorShouts == false),
-                Spell.BuffSelf(
-                    "Battle Shout",
-                    ret =>
-                    SingularSettings.Instance.Warrior.UseWarriorShouts &&
-                    !StyxWoW.Me.HasAnyAura(
-                        "Horn of Winter", "Strength of Earth Totem", "Battle Shout")), //Charge
-                Spell.Cast(
-                    "Charge",
-                    ret =>
-                    SpellManager.HasSpell("Charge") &&
-                    StyxWoW.Me.CurrentTarget.Distance.Between(
-                        SpellManager.Spells["Charge"].ActualMinRange(StyxWoW.Me.CurrentTarget),
-                        TalentManager.HasGlyph("Charge") /* WotLK QC: "Glyph of Charge" in WotLK, was "Glyph of Long Charge" in Cata */
-                            ? SpellManager.Spells["Charge"].ActualMaxRange(StyxWoW.Me.CurrentTarget) + 5
-                            : SpellManager.Spells["Charge"].ActualMaxRange(StyxWoW.Me.CurrentTarget))),
-                Spell.Cast(
-                    "Heroic Throw",
-                    ret =>
-                    !Unit.HasAura(StyxWoW.Me.CurrentTarget, "Charge Stun") &&
-                    SingularSettings.Instance.Warrior.UseWarriorBasicRotation == false), // Move to Melee
-                Movement.CreateMoveToMeleeBehavior(true));
+                            SingularSettings.Instance.Warrior.UseWarriorShouts &&
+                            !StyxWoW.Me.HasAnyAura(
+                                "Horn of Winter", "Strength of Earth Totem", "Battle Shout")), //Charge
+                        Spell.Cast(
+                            "Charge",
+                            ret =>
+                            SpellManager.HasSpell("Charge") &&
+                            StyxWoW.Me.CurrentTarget.Distance.Between(
+                                SpellManager.Spells["Charge"].ActualMinRange(StyxWoW.Me.CurrentTarget),
+                                TalentManager.HasGlyph("Charge") /* WotLK QC: "Glyph of Charge" in WotLK, was "Glyph of Long Charge" in Cata */
+                                    ? SpellManager.Spells["Charge"].ActualMaxRange(StyxWoW.Me.CurrentTarget) + 5
+                                    : SpellManager.Spells["Charge"].ActualMaxRange(StyxWoW.Me.CurrentTarget))),
+                        Spell.Cast(
+                            "Heroic Throw",
+                            ret =>
+                            !Unit.HasAura(StyxWoW.Me.CurrentTarget, "Charge Stun") &&
+                            SingularSettings.Instance.Warrior.UseWarriorBasicRotation == false), // Move to Melee
+                        Movement.CreateMoveToMeleeBehavior(true))));
         }
 
         [Spec(TalentSpec.ProtectionWarrior)]
