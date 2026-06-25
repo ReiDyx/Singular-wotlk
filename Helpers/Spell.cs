@@ -558,6 +558,12 @@ namespace Singular.Helpers
                     new Sequence(
                 // new Action(ctx => _lastBuffCast = name),
                         Cast(name, onUnit, requirements),
+                        // WotLK QC fix: instant-cast buffs (Aspect of the Viper/Dragonhawk, etc.)
+                        // skip the WaitContinue below and were never added to the dict, so the bot
+                        // spammed CastSpellById every pulse (~5x/600ms in the wild). Mark the spell
+                        // cast immediately so the next pulse skips the decorator.
+                        // Ported from Singular 6.X.X Buff() which calls UpdateDoubleCast unconditionally.
+                        new Action(ret => UpdateDoubleCastDict(name)),
                         new DecoratorContinue(
                             ret => SpellManager.Spells[name].CastTime > 0,
                             new Sequence(
@@ -571,10 +577,11 @@ namespace Singular.Helpers
 
         private static void UpdateDoubleCastDict(string spellName)
         {
-            if (DoubleCastPreventionDict.ContainsKey(spellName))
-                DoubleCastPreventionDict[spellName] = DateTime.UtcNow;
-
-            DoubleCastPreventionDict.Add(spellName, DateTime.UtcNow);
+            // WotLK QC fix: original code was `if (ContainsKey) Set else Add` but the Add ran
+            // unconditionally and threw on duplicate keys when called twice for the same spell
+            // (which now happens since instant-cast buffs call it before the CastTime>0 path).
+            // Dictionary indexer assignment is a safe set-or-add.
+            DoubleCastPreventionDict[spellName] = DateTime.UtcNow;
         }
 
         public static readonly Dictionary<string, DateTime> DoubleCastPreventionDict = new Dictionary<string, DateTime>();
