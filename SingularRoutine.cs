@@ -256,11 +256,15 @@ namespace Singular
                     );
             }
 
-            // There are some classes that uses spells in rest behavior. Basicly we don't want Rest to be called while flying.
+            // Rest wrapper.
+            // WotLK 3.3.5a / HB 6.2.3 era: no !IsFlying gate. Singular 5.4.8 uses TreeHooks
+            // and doesn't gate Rest on flying either.
+            // Source: Singular 5.4.8 /SingularRoutine.Behaviors.cs — HookExecutor(HookName(BehaviorType.Rest))
+            //         has no flight gate; Helpers/Rest.cs CreateDefaultRestBehaviour has no !IsFlying.
             if (_restBehavior != null)
             {
                 _restBehavior = new Decorator(
-                    ret => !Me.IsFlying && !Me.IsOnTransport && !SingularSettings.Instance.DisableNonCombatBehaviors,
+                    ret => !Me.IsOnTransport && !SingularSettings.Instance.DisableNonCombatBehaviors,
                     new LockSelector(
                         _restBehavior));
             }
