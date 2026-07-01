@@ -62,6 +62,10 @@ namespace Singular.ClassSpecific.Druid
                 Spell.Buff("Innervate", ret => StyxWoW.Me.ManaPercent <= SingularSettings.Instance.Druid.InnervateMana),
 
                 Spell.BuffSelf("Moonkin Form"),
+                // Matches Singular 4.3.4: CC or low HP — threshold is configurable (default 40%)
+                Spell.BuffSelf("Barkskin",
+                    ret => StyxWoW.Me.IsCrowdControlled() ||
+                           StyxWoW.Me.HealthPercent <= SingularSettings.Instance.Druid.BalanceBarkskinHealth),
 
                 Safers.EnsureTarget(),
                 Movement.CreateMoveToLosBehavior(),

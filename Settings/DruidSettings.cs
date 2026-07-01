@@ -194,6 +194,13 @@ namespace Singular.Settings
         [Description("Use Typhoon.")]
         public bool UseTyphoon { get; set; }
 
+        [Setting]
+        [DefaultValue(40)]
+        [Category("Balance")]
+        [DisplayName("Barkskin Health")]
+        [Description("Barkskin will be used when health drops below this value, or when crowd controlled (Normal combat only).")]
+        public int BalanceBarkskinHealth { get; set; }
+
         #endregion
 
         #region Resto
