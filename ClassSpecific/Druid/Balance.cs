@@ -62,7 +62,6 @@ namespace Singular.ClassSpecific.Druid
                 Spell.Buff("Innervate", ret => StyxWoW.Me.ManaPercent <= SingularSettings.Instance.Druid.InnervateMana),
 
                 Spell.BuffSelf("Moonkin Form"),
-                Common.CreatePveBarkskinBehavior(),
 
                 Safers.EnsureTarget(),
                 Movement.CreateMoveToLosBehavior(),
@@ -185,7 +184,6 @@ namespace Singular.ClassSpecific.Druid
                 Spell.BuffSelf("Innervate", 
                     ret => StyxWoW.Me.ManaPercent <= SingularSettings.Instance.Druid.InnervateMana),
                 Spell.BuffSelf("Moonkin Form"),
-                Common.CreatePveBarkskinBehavior(),
 
                 Safers.EnsureTarget(),
                 Movement.CreateMoveToLosBehavior(),
