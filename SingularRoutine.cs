@@ -136,6 +136,9 @@ namespace Singular
 
                 // Double cast shit
                 Spell.DoubleCastPreventionDict.RemoveAll(t => DateTime.UtcNow.Subtract(t).TotalMilliseconds >= 2500);
+
+                // Verify debuff casts that may have failed silently (immune targets)
+                SpellImmunityManager.Pulse();
                 
                 //Only pulse for classes with pets
                 if(StyxWoW.Me.Class== WoWClass.Hunter 

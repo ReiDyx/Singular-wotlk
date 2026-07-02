@@ -10,6 +10,8 @@ using Styx.Logic.Combat;
 using Styx.WoWInternals;
 using Styx.WoWInternals.WoWObjects;
 
+using Singular.Managers;
+
 using TreeSharp;
 
 using Action = TreeSharp.Action;
@@ -314,8 +316,11 @@ namespace Singular.Helpers
                     new Action(
                         ret =>
                         {
-                            Logger.Write("Casting " + name + " on " + onUnit(ret).SafeName());
-                            SpellManager.Cast(name, onUnit(ret));
+                            var target = onUnit(ret);
+                            Logger.Write("Casting " + name + " on " + target.SafeName());
+                            SpellManager.Cast(name, target);
+                            // Fallback immunity learn when combat log does not report IMMUNE
+                            SpellImmunityManager.RegisterDebuffCast(target, name);
 
                             //WoWSpell spell;
                             //if (SpellManager.Spells.TryGetValue(name, out spell))

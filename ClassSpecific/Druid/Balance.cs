@@ -40,6 +40,22 @@ namespace Singular.ClassSpecific.Druid
             get { return Clusters.GetBestUnitForCluster(Unit.NearbyUnfriendlyUnits.Where(u => u.Combat && !u.IsCrowdControlled()), ClusterType.Radius, 8f); }
         }
 
+        // Skip DoTs on immune targets (e.g. Mana Wraith + Moonfire)
+        private static bool CanApplyMoonfire(WoWUnit unit)
+        {
+            return unit != null
+                   && !unit.IsImmuneToSpell("Moonfire")
+                   && !unit.IsImmune(WoWSpellSchool.Nature)
+                   && !unit.IsImmune(WoWSpellSchool.Arcane);
+        }
+
+        private static bool CanApplyInsectSwarm(WoWUnit unit)
+        {
+            return unit != null
+                   && !unit.IsImmuneToSpell("Insect Swarm")
+                   && !unit.IsImmune(WoWSpellSchool.Nature);
+        }
+
         #endregion
 
         #region Normal Rotation
@@ -84,19 +100,24 @@ namespace Singular.ClassSpecific.Druid
                 
                         Spell.Cast("Moonfire", 
                             ret => Unit.NearbyUnfriendlyUnits.FirstOrDefault(u => 
-                                        u.Combat && !u.IsCrowdControlled() && !u.HasMyAura("Moonfire"))),
+                                        u.Combat && !u.IsCrowdControlled() && CanApplyMoonfire(u) &&
+                                        !u.HasMyAura("Moonfire"))),
                         Spell.Cast("Insect Swarm", 
                             ret => Unit.NearbyUnfriendlyUnits.FirstOrDefault(u => 
-                                        u.Combat && !u.IsCrowdControlled() && !u.HasMyAura("Insect Swarm")))
+                                        u.Combat && !u.IsCrowdControlled() && CanApplyInsectSwarm(u) &&
+                                        !u.HasMyAura("Insect Swarm")))
                         )),
 
                 // Refresh MF/SF
                 Spell.Cast("Moonfire", 
-                    ret => (StyxWoW.Me.CurrentTarget.GetAuraTimeLeft("Moonfire", true).TotalSeconds < 3) ||
-                            StyxWoW.Me.IsMoving),
+                    ret => CanApplyMoonfire(StyxWoW.Me.CurrentTarget) &&
+                           (StyxWoW.Me.CurrentTarget.GetAuraTimeLeft("Moonfire", true).TotalSeconds < 3 ||
+                            StyxWoW.Me.IsMoving)),
 
                 // Make sure we keep IS up. Clip the last tick. (~3s)
-                Spell.Cast("Insect Swarm", ret => StyxWoW.Me.CurrentTarget.GetAuraTimeLeft("Insect Swarm", true).TotalSeconds < 3),
+                Spell.Cast("Insect Swarm",
+                    ret => CanApplyInsectSwarm(StyxWoW.Me.CurrentTarget) &&
+                           StyxWoW.Me.CurrentTarget.GetAuraTimeLeft("Insect Swarm", true).TotalSeconds < 3),
 
                 // Cast Typhoon if we have it
                 Spell.Cast("Typhoon", ret => SingularSettings.Instance.Druid.UseTyphoon && SpellManager.HasSpell("Typhoon")),
@@ -148,10 +169,13 @@ namespace Singular.ClassSpecific.Druid
                            StyxWoW.Me.CurrentTarget.Class == WoWClass.Druid),
                 // Refresh MF
                 Spell.Cast("Moonfire",
-                    ret => StyxWoW.Me.CurrentTarget.GetAuraTimeLeft("Moonfire", true).TotalSeconds < 3 ||
-                            StyxWoW.Me.IsMoving),
+                    ret => CanApplyMoonfire(StyxWoW.Me.CurrentTarget) &&
+                           (StyxWoW.Me.CurrentTarget.GetAuraTimeLeft("Moonfire", true).TotalSeconds < 3 ||
+                            StyxWoW.Me.IsMoving)),
                 // Make sure we keep IS up. Clip the last tick. (~3s)
-                Spell.Cast("Insect Swarm", ret => StyxWoW.Me.CurrentTarget.GetAuraTimeLeft("Insect Swarm", true).TotalSeconds < 3),
+                Spell.Cast("Insect Swarm",
+                    ret => CanApplyInsectSwarm(StyxWoW.Me.CurrentTarget) &&
+                           StyxWoW.Me.CurrentTarget.GetAuraTimeLeft("Insect Swarm", true).TotalSeconds < 3),
                 // And then just spam Wrath/Starfire
                 Spell.Cast("Wrath", ret => BoomkinDpsSpell == "Wrath"),
                 Spell.Cast("Starfire", ret => BoomkinDpsSpell == "Starfire"),
@@ -213,19 +237,24 @@ namespace Singular.ClassSpecific.Druid
 
                         Spell.Cast("Moonfire",
                             ret => Unit.NearbyUnfriendlyUnits.FirstOrDefault(u => 
-                                        u.Combat && !u.IsCrowdControlled() && !u.HasMyAura("Moonfire"))),
+                                        u.Combat && !u.IsCrowdControlled() && CanApplyMoonfire(u) &&
+                                        !u.HasMyAura("Moonfire"))),
                         Spell.Cast("Insect Swarm",
                             ret => Unit.NearbyUnfriendlyUnits.FirstOrDefault(u => 
-                                        u.Combat && !u.IsCrowdControlled() &&!u.HasMyAura("Insect Swarm")))
+                                        u.Combat && !u.IsCrowdControlled() && CanApplyInsectSwarm(u) &&
+                                        !u.HasMyAura("Insect Swarm")))
                         )),
 
                 // Refresh MF
                 Spell.Cast("Moonfire",
-                    ret => StyxWoW.Me.CurrentTarget.GetAuraTimeLeft("Moonfire", true).TotalSeconds < 3 ||
-                            StyxWoW.Me.IsMoving),
+                    ret => CanApplyMoonfire(StyxWoW.Me.CurrentTarget) &&
+                           (StyxWoW.Me.CurrentTarget.GetAuraTimeLeft("Moonfire", true).TotalSeconds < 3 ||
+                            StyxWoW.Me.IsMoving)),
 
                 // Make sure we keep IS up. Clip the last tick. (~3s)
-                Spell.Cast("Insect Swarm", ret => StyxWoW.Me.CurrentTarget.GetAuraTimeLeft("Insect Swarm", true).TotalSeconds < 3),
+                Spell.Cast("Insect Swarm",
+                    ret => CanApplyInsectSwarm(StyxWoW.Me.CurrentTarget) &&
+                           StyxWoW.Me.CurrentTarget.GetAuraTimeLeft("Insect Swarm", true).TotalSeconds < 3),
 
                 // And then just spam Wrath/Starfire
                 Spell.Cast("Wrath", ret => BoomkinDpsSpell == "Wrath"),
