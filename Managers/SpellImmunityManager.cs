@@ -12,16 +12,19 @@ namespace Singular.Managers
 {
     static class SpellImmunityManager
     {
-        // Unit entry -> spell schools this mob has shown immunity to (bitmask)
+        // NPC entry -> spell schools learned from combat log IMMUNE (per combat session)
         static readonly Dictionary<uint, WoWSpellSchool> ImmuneSchools = new Dictionary<uint, WoWSpellSchool>();
 
-        // Unit entry -> specific spell names that failed (e.g. Moonfire on Mana Wraith)
+        // NPC entry -> spell names learned from combat log IMMUNE (per combat session)
         static readonly Dictionary<uint, HashSet<string>> ImmuneSpells = new Dictionary<uint, HashSet<string>>();
 
-        // Pending debuff checks after cast — verify aura applied on next pulse
+        // Unit GUID -> spell names learned from fallback only (avoids cross-mob false positives)
+        static readonly Dictionary<ulong, HashSet<string>> ImmuneSpellsByGuid = new Dictionary<ulong, HashSet<string>>();
+
+        // Pending debuff checks after cast — one entry per guid+spell
         static readonly List<PendingDebuffCheck> PendingDebuffChecks = new List<PendingDebuffCheck>();
 
-        // Failed apply attempts per entry+spell before marking immune
+        // Failed apply attempts per guid+spell before marking immune (fallback)
         static readonly Dictionary<string, int> DebuffFailAttempts = new Dictionary<string, int>();
 
         const int MaxDebuffFailAttempts = 2;
@@ -52,7 +55,7 @@ namespace Singular.Managers
         }
 
         /// <summary>
-        /// Record immunity from combat log (school + spell name).
+        /// Record immunity from combat log (school + spell name, keyed by NPC entry).
         /// </summary>
         public static void AddImmune(uint mobId, string spellName, WoWSpellSchool school)
         {
@@ -91,8 +94,43 @@ namespace Singular.Managers
             if (unit == null || string.IsNullOrEmpty(spellName))
                 return false;
 
-            HashSet<string> spells;
-            return ImmuneSpells.TryGetValue(unit.Entry, out spells) && spells.Contains(spellName);
+            HashSet<string> guidSpells;
+            if (ImmuneSpellsByGuid.TryGetValue(unit.Guid, out guidSpells) && guidSpells.Contains(spellName))
+                return true;
+
+            HashSet<string> entrySpells;
+            return ImmuneSpells.TryGetValue(unit.Entry, out entrySpells) && entrySpells.Contains(spellName);
+        }
+
+        /// <summary>
+        /// Reset all learned immunity — called when combat ends so each pull starts fresh.
+        /// </summary>
+        public static void Clear()
+        {
+            ImmuneSchools.Clear();
+            ImmuneSpells.Clear();
+            ImmuneSpellsByGuid.Clear();
+            PendingDebuffChecks.Clear();
+            DebuffFailAttempts.Clear();
+            Logger.WriteDebug("[Immunity] Cleared learned immunity (combat ended)");
+        }
+
+        /// <summary>
+        /// New target — retry all spells on this unit; drop prior fallback blocks for its GUID.
+        /// </summary>
+        public static void OnTargetChanged(ulong targetGuid)
+        {
+            if (targetGuid == 0)
+                return;
+
+            ImmuneSpellsByGuid.Remove(targetGuid);
+
+            var prefix = targetGuid + "_";
+            var keysToRemove = DebuffFailAttempts.Keys.Where(k => k.StartsWith(prefix)).ToList();
+            foreach (var key in keysToRemove)
+                DebuffFailAttempts.Remove(key);
+
+            PendingDebuffChecks.RemoveAll(c => c.UnitGuid == targetGuid);
         }
 
         /// <summary>
@@ -107,13 +145,29 @@ namespace Singular.Managers
             if (!TrackedDebuffSpells.Contains(spellName))
                 return;
 
+            if (unit.IsImmuneToSpell(spellName))
+                return;
+
+            // One pending check per guid+spell — rapid recasts only refresh the timer
+            var now = DateTime.UtcNow;
+            for (var i = 0; i < PendingDebuffChecks.Count; i++)
+            {
+                var pending = PendingDebuffChecks[i];
+                if (pending.UnitGuid != unit.Guid || pending.SpellName != spellName)
+                    continue;
+
+                pending.RegisteredAt = now;
+                PendingDebuffChecks[i] = pending;
+                return;
+            }
+
             PendingDebuffChecks.Add(new PendingDebuffCheck
             {
                 Entry = unit.Entry,
                 UnitGuid = unit.Guid,
                 SpellName = spellName,
                 UnitName = unit.SafeName(),
-                RegisteredAt = DateTime.UtcNow
+                RegisteredAt = now
             });
         }
 
@@ -125,8 +179,9 @@ namespace Singular.Managers
             if (PendingDebuffChecks.Count == 0)
                 return;
 
-            var latencyMs = StyxWoW.WoWClient.Latency + 400;
+            var latencyMs = StyxWoW.WoWClient.Latency + 800;
             var now = DateTime.UtcNow;
+            var incrementedThisPulse = new HashSet<string>();
 
             for (var i = PendingDebuffChecks.Count - 1; i >= 0; i--)
             {
@@ -136,20 +191,29 @@ namespace Singular.Managers
 
                 PendingDebuffChecks.RemoveAt(i);
 
+                // Match exact unit only — avoid false positives from another mob with same entry
                 var unit = ObjectManager.GetObjectsOfType<WoWUnit>(true, false)
-                    .FirstOrDefault(u => u.IsValid && (u.Guid == check.UnitGuid || u.Entry == check.Entry));
+                    .FirstOrDefault(u => u.IsValid && u.Guid == check.UnitGuid);
 
-                if (unit != null && unit.IsAlive && unit.HasMyAura(check.SpellName))
+                if (unit == null || !unit.IsAlive)
+                    continue;
+
+                if (unit.HasMyAura(check.SpellName))
                 {
-                    DebuffFailAttempts.Remove(GetFailKey(check.Entry, check.SpellName));
+                    DebuffFailAttempts.Remove(GetFailKey(check.UnitGuid, check.SpellName));
                     continue;
                 }
 
                 // Player targets (e.g. bubble) — do not learn immunity from failed debuff applies
-                if (unit != null && unit.IsPlayer)
+                if (unit.IsPlayer)
                     continue;
 
-                var failKey = GetFailKey(check.Entry, check.SpellName);
+                var failKey = GetFailKey(check.UnitGuid, check.SpellName);
+
+                // Only count one fail attempt per pulse — duplicate pending checks must not double-count
+                if (!incrementedThisPulse.Add(failKey))
+                    continue;
+
                 int attempts;
                 DebuffFailAttempts.TryGetValue(failKey, out attempts);
                 attempts++;
@@ -162,15 +226,26 @@ namespace Singular.Managers
                     continue;
                 }
 
-                Logger.Write("{0} cannot apply on {1} — skipping (immune or immune-like)", check.SpellName, check.UnitName);
-                AddImmune(check.Entry, check.SpellName, 0);
+                Logger.Write("{0} cannot apply on {1} — skipping this fight (immune or immune-like)", check.SpellName, check.UnitName);
+                AddImmuneSpellByGuid(check.UnitGuid, check.SpellName);
                 DebuffFailAttempts.Remove(failKey);
             }
         }
 
-        static string GetFailKey(uint entry, string spellName)
+        static void AddImmuneSpellByGuid(ulong guid, string spellName)
         {
-            return entry + "_" + spellName;
+            HashSet<string> spells;
+            if (!ImmuneSpellsByGuid.TryGetValue(guid, out spells))
+            {
+                spells = new HashSet<string>();
+                ImmuneSpellsByGuid.Add(guid, spells);
+            }
+            spells.Add(spellName);
+        }
+
+        static string GetFailKey(ulong guid, string spellName)
+        {
+            return guid + "_" + spellName;
         }
     }
 }

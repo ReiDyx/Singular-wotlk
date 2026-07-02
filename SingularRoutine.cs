@@ -108,14 +108,25 @@ namespace Singular
         }
 
         private ulong _lastTargetGuid = 0;
+        private bool _wasInCombat;
 
         public override void Pulse()
         {
             try
             {
+                // Reset learned immunity when combat ends — each pull retries all spells
+                var inCombat = StyxWoW.Me.Combat;
+                if (_wasInCombat && !inCombat)
+                    SpellImmunityManager.Clear();
+                _wasInCombat = inCombat;
+
                 if (_lastTargetGuid != StyxWoW.Me.CurrentTargetGuid)
                 {
-                    _lastTargetGuid = StyxWoW.Me.CurrentTargetGuid;
+                    var newTargetGuid = StyxWoW.Me.CurrentTargetGuid;
+                    if (newTargetGuid != 0 && inCombat)
+                        SpellImmunityManager.OnTargetChanged(newTargetGuid);
+
+                    _lastTargetGuid = newTargetGuid;
                     // Don't print this shit if we don't need to. Kthx.
                     if (_lastTargetGuid != 0 && StyxWoW.Me.CurrentTarget != null && StyxWoW.Me.CurrentTarget.IsValid)
                     {
