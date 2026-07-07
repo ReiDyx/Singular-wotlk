@@ -42,7 +42,7 @@ namespace Singular.Dynamics
                 bool classMatches = false, specMatches = false, behaviorMatches = false, contextMatches = false, hasIgnore = false;
                 int thePriority = 0;
                 var theBehaviourType = BehaviorType.All;
-                var theIgnoreType = BehaviorType.All;
+                var ignoreBehaviorTypes = new List<BehaviorType>();
                 foreach (object ca in mi.GetCustomAttributes(false))
                 {
                     if (ca is ClassAttribute)
@@ -102,11 +102,11 @@ namespace Singular.Dynamics
                     {
                         var attrib = ca as IgnoreBehaviorCountAttribute;
                         hasIgnore = true;
-                        theIgnoreType = attrib.Type;
+                        ignoreBehaviorTypes.Add(attrib.Type);
                     }
                 }
 
-                if (behaviorMatches && hasIgnore && theBehaviourType == theIgnoreType)
+                if (behaviorMatches && hasIgnore && ignoreBehaviorTypes.Any(t => (t & behavior) != 0))
                 {
                     behaviourCount--;
                 }

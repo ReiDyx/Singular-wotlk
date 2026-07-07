@@ -214,11 +214,20 @@ namespace Singular
                 return false;
             }
 
-            // If there's no class-specific resting, just use the default, which just eats/drinks when low.
-            if (!EnsureComposite(false, BehaviorType.Rest, out _restBehavior))
+            // Always ensure eat/drink is present in Rest. Generic.cs hooks (flasks/trinkets/racials)
+            // use BehaviorType.All and must not replace the default eat/drink behavior.
+            int restCount = 0;
+            _restBehavior = CompositeBuilder.GetComposite(_myClass, TalentManager.CurrentSpec, BehaviorType.Rest, CurrentWoWContext, out restCount);
+            var defaultRest = Helpers.Rest.CreateDefaultRestBehaviour();
+            if (_restBehavior == null)
             {
                 Logger.Write("Using default rest behavior.");
-                _restBehavior = Helpers.Rest.CreateDefaultRestBehaviour();
+                _restBehavior = defaultRest;
+            }
+            else
+            {
+                Logger.Write("Merging default eat/drink into rest behavior (restCount={0}).", restCount);
+                _restBehavior = new PrioritySelector(defaultRest, _restBehavior);
             }
 
             // These are optional. If they're not implemented, we shouldn't stop because of it.

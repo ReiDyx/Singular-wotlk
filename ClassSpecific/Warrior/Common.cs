@@ -1,8 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Singular.Dynamics;
+using Singular.Helpers;
+using Singular.Managers;
+using Styx.Combat.CombatRoutine;
 using Styx.Helpers;
+using TreeSharp;
 
 namespace Singular.ClassSpecific.Warrior
 {
@@ -19,6 +21,17 @@ namespace Singular.ClassSpecific.Warrior
                     ChargeTimer.Reset();
                 return tmp;
             }
+        }
+
+        [Class(WoWClass.Warrior)]
+        [Spec(TalentSpec.ArmsWarrior)]
+        [Spec(TalentSpec.FuryWarrior)]
+        [Spec(TalentSpec.ProtectionWarrior)]
+        [Behavior(BehaviorType.Rest)]
+        [Context(WoWContext.All)]
+        public static Composite CreateWarriorRest()
+        {
+            return Rest.CreateDefaultRestBehaviour();
         }
     }
 }

@@ -68,8 +68,11 @@ namespace Singular.Helpers
                         new Decorator(
                             ret =>
                             !StyxWoW.Me.IsSwimming && StyxWoW.Me.HealthPercent <= SingularSettings.Instance.MinHealth && !StyxWoW.Me.HasAura("Food") &&
-                            Consumable.GetBestFood(false) != null,
+                            Consumable.HasFoodAvailable(),
                             new PrioritySelector(
+                                new Decorator(
+                                    ret => StyxWoW.Me.Mounted,
+                                    Helpers.Common.CreateDismount("Eating")),
                                 new Decorator(
                                     ret => StyxWoW.Me.IsMoving,
                                     new Action(ret => Navigator.PlayerMover.MoveStop())),
@@ -77,6 +80,8 @@ namespace Singular.Helpers
                                     new Action(
                                         ret =>
                                         {
+                                            Logger.Write("Rest: eating at {0:F0}% HP (food available: {1})",
+                                                StyxWoW.Me.HealthPercent, Consumable.HasFoodAvailable());
                                             Styx.Logic.Common.Rest.FeedImmediate();
                                         }),
                                     Helpers.Common.CreateWaitForLagDuration()))),
@@ -85,8 +90,11 @@ namespace Singular.Helpers
                             ret =>
                             !StyxWoW.Me.IsSwimming && (StyxWoW.Me.PowerType == WoWPowerType.Mana || StyxWoW.Me.Class == WoWClass.Druid) &&
                             StyxWoW.Me.ManaPercent <= SingularSettings.Instance.MinMana &&
-                            !StyxWoW.Me.HasAura("Drink") && Consumable.GetBestDrink(false) != null,
+                            !StyxWoW.Me.HasAura("Drink") && Consumable.HasDrinkAvailable(),
                             new PrioritySelector(
+                                new Decorator(
+                                    ret => StyxWoW.Me.Mounted,
+                                    Helpers.Common.CreateDismount("Drinking")),
                                 new Decorator(
                                     ret => StyxWoW.Me.IsMoving,
                                     new Action(ret => Navigator.PlayerMover.MoveStop())),
