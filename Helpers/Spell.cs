@@ -565,7 +565,7 @@ namespace Singular.Helpers
                            buffNames.All(b => myBuff ? !onUnit(ret).HasMyAura(b) : !onUnit(ret).HasAura(b)),
                     new Sequence(
                 // new Action(ctx => _lastBuffCast = name),
-                        Cast(name, onUnit, requirements),
+                        Cast(name, ret => false, onUnit, requirements),
                         // WotLK QC fix: instant-cast buffs (Aspect of the Viper/Dragonhawk, etc.)
                         // skip the WaitContinue below and were never added to the dict, so the bot
                         // spammed CastSpellById every pulse (~5x/600ms in the wild). Mark the spell

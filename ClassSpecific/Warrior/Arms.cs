@@ -215,10 +215,8 @@ namespace Singular.ClassSpecific.Warrior
                                        SingularSettings.Instance.Warrior.UseWarriorDpsCooldowns &&
                                        SingularSettings.Instance.Warrior.UseWarriorBasicRotation == false),
                         Spell.BuffSelf("Sweeping Strikes"),
-                        Spell.Cast("Bladestorm",
-                                   ret =>
-                                   SingularSettings.Instance.Warrior.UseWarriorBladestorm &&
-                                   StyxWoW.Me.CurrentTarget.DistanceSqr < 36),
+                        Spell.BuffSelf("Bladestorm",
+                                       ret => SingularSettings.Instance.Warrior.UseWarriorBladestorm),
                 // WotLK: Blood and Thunder doesn't exist (Cata 4.0.1+), Rend doesn't spread via TC — cast Rend normally
                         Spell.Cast("Rend", ret => !StyxWoW.Me.CurrentTarget.HasAura("Rend")),
                         Spell.Cast("Thunder Clap"),
@@ -248,7 +246,7 @@ namespace Singular.ClassSpecific.Warrior
                 Spell.Buff("Rend"),
                 Spell.Cast("Mortal Strike"),
                 //Bladestorm after dots and MS if against player
-                Spell.Cast("Bladestorm", ret => StyxWoW.Me.CurrentTarget.IsPlayer && StyxWoW.Me.CurrentTarget.DistanceSqr < 36 && SingularSettings.Instance.Warrior.UseWarriorBladestorm),
+                Spell.BuffSelf("Bladestorm", ret => StyxWoW.Me.CurrentTarget.IsPlayer && SingularSettings.Instance.Warrior.UseWarriorBladestorm),
                 Spell.Cast("Overpower"),
                 Spell.Cast("Slam", ret => RagePercent > 40 && SingularSettings.Instance.Warrior.UseWarriorSlamTalent),
 
@@ -365,7 +363,7 @@ namespace Singular.ClassSpecific.Warrior
                 // WotLK 3.1+: Recklessness usable in any stance
                         Spell.BuffSelf("Recklessness", ret => SingularSettings.Instance.Warrior.UseWarriorDpsCooldowns && SingularSettings.Instance.Warrior.UseWarriorBasicRotation == false),
                         Spell.BuffSelf("Sweeping Strikes"),
-                        Spell.Cast("Bladestorm", ret => SingularSettings.Instance.Warrior.UseWarriorBladestorm && StyxWoW.Me.CurrentTarget.DistanceSqr < 36),
+                        Spell.BuffSelf("Bladestorm", ret => SingularSettings.Instance.Warrior.UseWarriorBladestorm),
                         Spell.Cast("Rend", ret => !StyxWoW.Me.CurrentTarget.HasAura("Rend")), // Blood and Thunder = Cata 4.0.1+, position (3,3) WotLK = Trauma
                         Spell.Cast("Thunder Clap"),
                         Spell.Cast("Cleave"),
@@ -517,7 +515,7 @@ namespace Singular.ClassSpecific.Warrior
                 // WotLK 3.1+: Recklessness usable in any stance
                         Spell.BuffSelf("Recklessness", ret => SingularSettings.Instance.Warrior.UseWarriorDpsCooldowns && SingularSettings.Instance.Warrior.UseWarriorBasicRotation == false),
                         Spell.BuffSelf("Sweeping Strikes"),
-                        Spell.Cast("Bladestorm", ret => SingularSettings.Instance.Warrior.UseWarriorBladestorm && StyxWoW.Me.CurrentTarget.DistanceSqr < 36),
+                        Spell.BuffSelf("Bladestorm", ret => SingularSettings.Instance.Warrior.UseWarriorBladestorm),
                         Spell.Cast("Rend", ret => !StyxWoW.Me.CurrentTarget.HasAura("Rend")), // Blood and Thunder = Cata 4.0.1+, position (3,3) WotLK = Trauma
                         Spell.Cast("Thunder Clap"),
                         Spell.Cast("Cleave"),
@@ -546,7 +544,7 @@ namespace Singular.ClassSpecific.Warrior
                 Spell.Cast("Execute", ret => StyxWoW.Me.CurrentTarget.HealthPercent < 20 || StyxWoW.Me.HasAura("Sudden Death")),
 
                 //Bladestorm after dots and MS if against player
-                Spell.Cast("Bladestorm", ret => StyxWoW.Me.CurrentTarget.IsPlayer && StyxWoW.Me.CurrentTarget.DistanceSqr < 36 && SingularSettings.Instance.Warrior.UseWarriorBladestorm),
+                Spell.BuffSelf("Bladestorm", ret => StyxWoW.Me.CurrentTarget.IsPlayer && SingularSettings.Instance.Warrior.UseWarriorBladestorm),
                 Spell.Cast("Overpower"),
                 Spell.Cast("Slam", ret => RagePercent > 40 && SingularSettings.Instance.Warrior.UseWarriorSlamTalent),
 
